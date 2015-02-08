@@ -1,0 +1,143 @@
+---
+title: ""
+author: "Benjamin Radford"
+date: "Sunday, February 08, 2015"
+output: html_document
+runtime: shiny
+---
+
+<center>
+
+```{r, echo=FALSE}
+# Define global variables
+community.chest <- c(2, 17, 33)
+go.to.jail <- 30
+jail <- 10
+chance <- c(7, 22, 6)
+spaces <- c("Go","Med","Chest","Baltic","Tax","Reading",
+            "Oriental","Chance","Vermont","Conneticut","Jail",
+            "St.Charles","Electric","States","Virginia","Penn",
+            "St.James","Chest","Tennessee","New York","Free",
+            "Kentucky","Chance","Indiana","Illinois","B & O",
+            "Altantic","Ventnor","Water","Marvin","Go to Jail",
+            "Pacific","NC","Chest","Penn","Short Line",
+            "Chance","Park","Luxury","Boardwalk")
+space.colors <- c("white","plum2","#dddddd","plum2","#dddddd","#aaaaaa",
+                  "lightblue3","#dddddd","lightblue3","lightblue3","#dddddd",
+                  "lightpink","#dddddd","lightpink","lightpink","#aaaaaa",
+                  "peru","#dddddd","peru","peru","#dddddd",
+                  "darksalmon","#dddddd","darksalmon","darksalmon","#aaaaaa",
+                  "khaki","khaki","#dddddd","khaki","#dddddd",
+                  "darkseagreen3","darkseagreen3","#dddddd","darkseagreen3","#aaaaaa",
+                  "#dddddd","steelblue","#dddddd","steelblue")
+x.coords <- c(11:1,rep(1,9),1:11,rep(11,9))
+y.coords <- c(rep(1,11),2:10,rep(11,11),10:2)
+
+MCopoly <- function(sim.rolls=3, sims=1000)
+{
+  # Simulates several dice rolls in monopoly.
+  #
+  # Args:
+  #   sim.rolls: The number of dice rolls in the game.
+  #   sims: The number of "games" to simulate.
+  #
+  # Returns:
+  #   A vector of spaces landed on.
+  
+  landed.on <- NULL
+  
+  for(ii in 1:sims)
+  {
+    current.position <- 0
+    rolls <- 0
+    while(rolls < sim.rolls)
+    {
+      dice.1 <- sample(1:6,1) 
+      dice.2 <- sample(1:6,1)
+      current.position <- current.position + dice.1 + dice.2
+      if(current.position%in%community.chest)
+        current.position <- sample(c(rep(current.position,16),jail), 1)
+      if(current.position%in%chance)
+      {
+        chance.card <- sample(1:18,1)
+        if(chance.card==1) # Go
+          current.position <- 0
+        if(chance.card==2) # Illinois Ave
+          current.position <- 24
+        if(chance.card==3)
+          ifelse(current.position>12 & current.position<28,
+                 current.position <- 28,
+                 current.position <- 12)
+        if(chance.card%in%c(4,18))
+        {
+          if(current.position %in% c(0:4,36:39))
+            current.position <- 5
+          if(current.position %in% 6:14)
+            current.position <- 15
+          if(current.position %in% 16:24)
+            current.position <- 25
+          if(current.position %in% 26:34)
+            current.position <- 35
+        }
+        if(chance.card==5)
+          current.position <- 11
+        if(chance.card==8)
+          current.position <- current.position - 3
+        if(chance.card==9)
+          current.position <- jail
+        if(chance.card==12)
+          current.position <- 5
+        if(chance.card==13)
+          current.position <- 39
+      }
+      if(current.position == go.to.jail)
+        current.position <- jail
+      if(current.position >= 40)
+      {
+        current.position <- current.position - 40
+  #       cycles <- cycles + 1
+      }
+      if(current.position==30)
+        break
+      landed.on <- c(landed.on, current.position)
+      rolls <- rolls + 1
+    }
+  }
+  return(landed.on)
+}
+
+plotOpoly <- function(landed.on)
+{
+  # Plots the results of MCopoly simulations.
+  #
+  # Args:
+  #   landed.on: The vector of spaces landed on.
+  #
+  # Returns:
+  #   A heatmap plot of the monopoly board.
+  
+  distribution <- table(c(landed.on,0:39))
+  heatmap.pal <- colorRampPalette(c("#FFFFFF","#ffffb2","#fecc5c","#fd8d3c","#f03b20","#bd0026"))
+  heatmap <- heatmap.pal(max(distribution))[distribution]
+  par(bg="#eeeeee", mar=c(0,0,0,0))
+  plot(x.coords,y.coords, xlim=c(0,12), ylim=c(0,12),
+       frame=F, xaxt="n", yaxt="n", xlab="", ylab="",
+       xaxs="i",yaxs="i",type="n")
+  rect(x.coords-.5,y.coords-.5,x.coords+.5,y.coords+.5,col=heatmap)
+  rect(x.coords-.5,y.coords+.25,x.coords+.5,y.coords+.5,col=space.colors)
+  text(x.coords,y.coords+0.35,spaces,cex=0.75)
+  text(x.coords,y.coords,round((distribution-1)/sum(distribution-1),digits=2),pos=1)
+}
+
+inputPanel(align="center",
+  sliderInput("sim.rolls", label = "Number of Dice Rolls:",
+              min = 1, max = 15, value = 1, step = 1)
+)
+
+renderPlot(width=600, height=600,{
+  plotOpoly(MCopoly(input$sim.rolls))
+})
+
+
+```
+
