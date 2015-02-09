@@ -33,7 +33,7 @@ space.colors <- c("white","plum2","#dddddd","plum2","#dddddd","#aaaaaa",
 x.coords <- c(11:1,rep(1,9),1:11,rep(11,9))
 y.coords <- c(rep(1,11),2:10,rep(11,11),10:2)
 
-MCopoly <- function(sim.rolls=3, sims=1000)
+MCopoly <- function(sim.rolls=3, cumulative=F, sims=1000)
 {
   # Simulates several dice rolls in monopoly.
   #
@@ -99,9 +99,12 @@ MCopoly <- function(sim.rolls=3, sims=1000)
       }
       if(current.position==30)
         break
-      landed.on <- c(landed.on, current.position)
+      if(cumulative==T)
+        landed.on <- c(landed.on, current.position)
       rolls <- rolls + 1
     }
+  if(cumulative==F)
+    landed.on <- c(landed.on, current.position)
   }
   return(landed.on)
 }
@@ -131,11 +134,12 @@ plotOpoly <- function(landed.on)
 
 inputPanel(align="center",
   sliderInput("sim.rolls", label = "Number of Dice Rolls:",
-              min = 1, max = 15, value = 1, step = 1)
+              min = 1, max = 20, value = 1, step = 1),
+  checkboxInput("cumulative", label="Cumulative",value=F)
 )
 
 renderPlot(width=600, height=600,{
-  plotOpoly(MCopoly(input$sim.rolls))
+  plotOpoly(MCopoly(input$sim.rolls,input$cumulative))
 })
 
 
